@@ -128,9 +128,9 @@ int main(int argc, const char * argv[]) {
             return -1;
         }
 		
-		MTKView *metalView = [[MTKView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) device:device];
+	MTKView *metalView = [[MTKView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) device:device];
         metalView.layer.opaque = YES;
-		metalView.device = device;
+	metalView.device = device;
 
         MetalRenderer *renderer = [[MetalRenderer alloc] initWithMetalKitView:metalView];
 
