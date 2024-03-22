@@ -84,9 +84,6 @@ void internalDrawStatic(NSObject *object);
 	[self setupPipeline];
 	[self setupVertexBuffer];
 
-	[self setupPipeline];
-	[self setupVertexBuffer];
-
 	return self;
 }
 
@@ -99,8 +96,10 @@ void internalDrawStatic(NSObject *object);
 		return;
 	}
 	
-	id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_shader"];
-	id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_shader"];
+	id<MTLFunction> vertexFunction = [library newFunctionWithName:@"gbuffer_vertex_shader"];
+	id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"gbuffer_fragment_shader"];
+	id<MTLFunction> passVertexFunction = [library newFunctionWithName:@"pass_vertex_shader"];
+	id<MTLFunction> passFragmentFunction = [library newFunctionWithName:@"final_fragment_shader"];
 
 	MTLVertexDescriptor *vertexDescriptor = [[MTLVertexDescriptor alloc] init];
 	vertexDescriptor.attributes[0].format = MTLVertexFormatFloat3;
@@ -112,8 +111,9 @@ void internalDrawStatic(NSObject *object);
 	vertexDescriptor.layouts[0].stride = sizeof(float) * 3 * 2;
 	
 	MTLRenderPipelineDescriptor *pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-	pipelineDescriptor.vertexFunction = vertexFunction;
-	pipelineDescriptor.fragmentFunction = fragmentFunction;
+	pipelineDescriptor.label = @"Final Pass Pipeline";
+	pipelineDescriptor.vertexFunction = quadFunction;
+	pipelineDescriptor.fragmentFunction = finalFragmentFunction;
 	pipelineDescriptor.colorAttachments[0].pixelFormat = _metalView.colorPixelFormat;
 	pipelineDescriptor.vertexDescriptor = vertexDescriptor;
 	
@@ -121,6 +121,20 @@ void internalDrawStatic(NSObject *object);
 	if (!_pipelineState) {
 		NSLog(@"Failed to create render pipeline state: %@", error);
 	}
+
+	MTLTextureDescriptor *gbufferTexDescriptor = [MTLTextureDescriptor new];
+	gbufferTexDescriptor.textureType = MTLTextureType2D;
+	gbufferTexDescriptor.width = 800;
+	gbufferTexDescriptor.height = 600;
+	gbufferTexDescriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
+	gbufferTexDescriptor.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+
+	MTLRenderPipelineDescriptor *gbufferPipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	gbufferPipelineDescriptor.label = @"GBuffer Pass Pipeline";
+	pipelineStateDescriptor.sampleCount = 1;
+	pipelineStateDescriptor.vertexFunction =  [defaultLibrary newFunctionWithName:@"simpleVertexShader"];
+	pipelineStateDescriptor.fragmentFunction =  [defaultLibrary newFunctionWithName:@"simpleFragmentShader"];
+	pipelineStateDescriptor.colorAttachments[0].pixelFormat = _renderTargetTexture.pixelFormat;
 }
 
 - (void)setupVertexBuffer {
